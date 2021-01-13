@@ -10,7 +10,6 @@ param(
   [Parameter(Mandatory=$false)][string] $EnableNugetValidation,
   [Parameter(Mandatory=$false)][string] $PublishInstallersAndChecksums,
   [Parameter(Mandatory=$false)][string] $ArtifactsPublishingAdditionalParameters,
-  [Parameter(Mandatory=$false)][string] $SymbolPublishingAdditionalParameters,
   [Parameter(Mandatory=$false)][string] $SigningValidationAdditionalParameters
 )
 
@@ -22,13 +21,8 @@ try {
   $optionalParams = [System.Collections.ArrayList]::new()
 
   if ("" -ne $ArtifactsPublishingAdditionalParameters) {
-    $optionalParams.Add("--artifact-publishing-parameters") | Out-Null
+    $optionalParams.Add("artifact-publishing-parameters") | Out-Null
     $optionalParams.Add($ArtifactsPublishingAdditionalParameters) | Out-Null
-  }
-
-  if ("" -ne $SymbolPublishingAdditionalParameters) {
-    $optionalParams.Add("--symbol-publishing-parameters") | Out-Null
-    $optionalParams.Add($SymbolPublishingAdditionalParameters) | Out-Null
   }
 
   if ("false" -eq $WaitPublishingFinish) {

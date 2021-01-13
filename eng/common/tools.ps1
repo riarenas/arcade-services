@@ -57,7 +57,7 @@ set-strictmode -version 2.0
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# If specifies, provides an alternate path for getting .NET Core SDKs and Runtimes. This script will still try public sources first.
+# If specified, provides an alternate path for getting .NET Core SDKs and Runtimes. This script will still try public sources first.
 [string]$runtimeSourceFeed = if (Test-Path variable:runtimeSourceFeed) { $runtimeSourceFeed } else { $null }
 # Base-64 encoded SAS token that has permission to storage container described by $runtimeSourceFeed
 [string]$runtimeSourceFeedKey = if (Test-Path variable:runtimeSourceFeedKey) { $runtimeSourceFeedKey } else { $null }
@@ -439,26 +439,11 @@ function LocateVisualStudio([object]$vsRequirements = $null){
   if (!(Test-Path $vsWhereExe)) {
     Create-Directory $vsWhereDir
     Write-Host 'Downloading vswhere'
-    $maxRetries = 5
-    $retries = 1
-
-    while($true) {
-      try {
-        Invoke-WebRequest "https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/vswhere/$vswhereVersion/vswhere.exe" -OutFile $vswhereExe
-        break
-      }
-      catch{
-        Write-PipelineTelemetryError -Category 'InitializeToolset' -Message $_
-      }
-
-      if (++$retries -le $maxRetries) {
-        $delayInSeconds = [math]::Pow(2, $retries) - 1 # Exponential backoff
-        Write-Host "Retrying. Waiting for $delayInSeconds seconds before next attempt ($retries of $maxRetries)."
-        Start-Sleep -Seconds $delayInSeconds
-      }
-      else {
-        Write-PipelineTelemetryError -Category 'InitializeToolset' -Message "Unable to download file in $maxRetries attempts."
-      }
+    try {
+      Invoke-WebRequest "https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/vswhere/$vswhereVersion/vswhere.exe" -OutFile $vswhereExe
+    }
+    catch {
+      Write-PipelineTelemetryError -Category 'InitializeToolset' -Message $_
     }
   }
 
@@ -645,11 +630,7 @@ function MSBuild() {
 
     $toolsetBuildProject = InitializeToolset
     $path = Split-Path -parent $toolsetBuildProject
-    $path = Join-Path $path (Join-Path $buildTool.Framework 'Microsoft.DotNet.ArcadeLogging.dll')
-    if (-not (Test-Path $path)) {
-      $path = Split-Path -parent $toolsetBuildProject
-      $path = Join-Path $path (Join-Path $buildTool.Framework 'Microsoft.DotNet.Arcade.Sdk.dll')
-    }
+    $path = Join-Path $path (Join-Path $buildTool.Framework 'Microsoft.DotNet.Arcade.Sdk.dll')
     $args += "/logger:$path"
   }
 
@@ -696,23 +677,14 @@ function MSBuild-Core() {
   $exitCode = Exec-Process $buildTool.Path $cmdArgs
 
   if ($exitCode -ne 0) {
-    # We should not Write-PipelineTaskError here because that message shows up in the build summary
-    # The build already logged an error, that's the reason it failed. Producing an error here only adds noise.
-    Write-Host "Build failed with exit code $exitCode. Check errors above." -ForegroundColor Red
+    Write-PipelineTelemetryError -Category 'Build' -Message 'Build failed.'
 
     $buildLog = GetMSBuildBinaryLogCommandLineArgument $args
-    if ($null -ne $buildLog) {
+    if ($buildLog -ne $null) {
       Write-Host "See log: $buildLog" -ForegroundColor DarkGray
     }
 
-    if ($ci) {
-      Write-PipelineSetResult -Result "Failed" -Message "msbuild execution failed."
-      # Exiting with an exit code causes the azure pipelines task to log yet another "noise" error
-      # The above Write-PipelineSetResult will cause the task to be marked as failure without adding yet another error
-      ExitWithExitCode 0
-    } else {
-      ExitWithExitCode $exitCode
-    }
+    ExitWithExitCode $exitCode
   }
 }
 

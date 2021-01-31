@@ -1,0 +1,15 @@
+{
+  "name": ".NET Status E-mail Alert",
+  "type": "email",
+  "isDefault": false,
+  "sendReminder": false,
+  "disableResolveMessage": false,
+  "frequency": "",
+  "settings": {
+    "addresses": "dnceng@microsoft.com",
+    "autoResolve": true,
+    "httpMethod": "POST",
+    "uploadImage": true,
+    "singleEmail": true
+  }
+}

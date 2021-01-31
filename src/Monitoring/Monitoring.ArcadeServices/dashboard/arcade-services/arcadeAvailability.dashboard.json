@@ -3701,6 +3701,9 @@
         "notifications": [
           {
             "uid": "statusHook"
+          },
+          {
+            "uid": "emailHook"
           }
         ]
       },

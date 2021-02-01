@@ -29,6 +29,20 @@
         </Extension>
       </Extensions>
     </StatefulServiceType>
+    <StatefulServiceType ServiceTypeName="MergeActorServiceType" HasPersistedState="true">
+      <Extensions>
+        <Extension Name="__GeneratedServiceType__" GeneratedId="f9e2f7c6-15cd-4641-805b-27d4addae5cf|Persisted">
+          <GeneratedNames xmlns="http://schemas.microsoft.com/2015/03/fabact-no-schema">
+            <DefaultService Name="MergeActorService" />
+            <ReplicatorEndpoint Name="MergeActorServiceReplicatorEndpoint" />
+            <ReplicatorConfigSection Name="MergeActorServiceReplicatorConfig" />
+            <ReplicatorSecurityConfigSection Name="MergeActorServiceReplicatorSecurityConfig" />
+            <StoreConfigSection Name="MergeActorServiceLocalStoreConfig" />
+            <ServiceEndpointV2 Name="MergeActorServiceEndpointV2" />
+          </GeneratedNames>
+        </Extension>
+      </Extensions>
+    </StatefulServiceType>
   </ServiceTypes>
   <CodePackage Name="Code" Version="1.0.42">
     <EntryPoint>
@@ -48,6 +62,8 @@
       <Endpoint Name="SubscriptionActorServiceReplicatorEndpoint" />
       <Endpoint Name="PullRequestActorServiceEndpointV2" />
       <Endpoint Name="PullRequestActorServiceReplicatorEndpoint" />
+      <Endpoint Name="MergeActorServiceEndpointV2" />
+      <Endpoint Name="MergeActorServiceReplicatorEndpoint" />
     </Endpoints>
   </Resources>
 </ServiceManifest>

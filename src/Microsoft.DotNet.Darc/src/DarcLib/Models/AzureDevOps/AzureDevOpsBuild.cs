@@ -17,5 +17,7 @@ namespace Microsoft.DotNet.DarcLib
         public string Status { get; set; }
 
         public string Result { get; set; }
+
+        public string SourceVersion { get; set; }
     }
 }

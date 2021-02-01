@@ -30,6 +30,7 @@ namespace SubscriptionActorService
                 {
                     host.RegisterStatefulActorService<SubscriptionActor>("SubscriptionActor");
                     host.RegisterStatefulActorService<PullRequestActor>("PullRequestActor");
+                    host.RegisterStatefulActorService<MergeActor>("MergeActor");
                     host.ConfigureServices(Configure);
                 });
         }

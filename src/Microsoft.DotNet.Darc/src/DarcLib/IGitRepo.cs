@@ -208,6 +208,16 @@ namespace Microsoft.DotNet.DarcLib
         /// <param name="pullRequestUri"></param>
         /// <returns>Async task</returns>
         Task DeletePullRequestBranchAsync(string pullRequestUri);
+        
+
+        /// <summary>
+        /// Attempts a fast forward merge of the top commit of a branch into another
+        /// </summary>
+        /// <param name="repoUri"></param>
+        /// <param name="branchToMerge"></param>
+        /// <param name="baseBranch"></param>
+        /// <returns></returns>
+        Task<string> TryFastForwardMergeBranchesAsync(string repoUri, string branchToMerge, string baseBranch);
     }
 
     public class PullRequest

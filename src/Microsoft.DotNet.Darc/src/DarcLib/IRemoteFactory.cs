@@ -16,5 +16,7 @@ namespace Microsoft.DotNet.DarcLib
         Task<IRemote> GetRemoteAsync(string repoUrl, ILogger logger);
 
         Task<IRemote> GetBarOnlyRemoteAsync(ILogger logger);
+
+        Task<IAzureDevOpsClient> GetAzdoClientForAccount(string account, ILogger logger);
     }
 }

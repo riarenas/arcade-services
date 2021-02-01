@@ -11,7 +11,6 @@ using Maestro.Data;
 using Maestro.Data.Models;
 using Microsoft.DotNet.ServiceFabric.ServiceHost;
 using Microsoft.DotNet.ServiceFabric.ServiceHost.Actors;
-using Microsoft.DotNet.Services.Utility;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.ServiceFabric.Actors;
@@ -40,7 +39,7 @@ namespace SubscriptionActorService
                 throw new NotImplementedException();
             }
 
-            public Task<bool> UpdateForMergedPullRequestAsync(int updateBuildId)
+            public Task<bool> UpdateForMergedDependencyUpdate(int updateBuildId)
             {
                 throw new NotImplementedException();
             }
@@ -64,12 +63,14 @@ namespace SubscriptionActorService
             BuildAssetRegistryContext context,
             ILogger<SubscriptionActor> logger,
             IActionRunner actionRunner,
-            IActorProxyFactory<IPullRequestActor> pullRequestActorFactory)
+            IActorProxyFactory<IPullRequestActor> pullRequestActorFactory,
+            IActorProxyFactory<IMergeActor> mergeActorFactory)
         {
             Context = context;
             Logger = logger;
             ActionRunner = actionRunner;
             PullRequestActorFactory = pullRequestActorFactory;
+            MergeActorFactory = mergeActorFactory;
         }
 
         public ActorId Id { get; private set; }
@@ -77,6 +78,7 @@ namespace SubscriptionActorService
         public ILogger<SubscriptionActor> Logger { get; }
         public IActionRunner ActionRunner { get; }
         public IActorProxyFactory<IPullRequestActor> PullRequestActorFactory { get; }
+        public IActorProxyFactory<IMergeActor> MergeActorFactory { get; }
 
         public Guid SubscriptionId => Id.GetGuidId();
 
@@ -119,7 +121,7 @@ namespace SubscriptionActorService
             return ActionRunner.ExecuteAction(() => UpdateAsync(buildId));
         }
 
-        public async Task<bool> UpdateForMergedPullRequestAsync(int updateBuildId)
+        public async Task<bool> UpdateForMergedDependencyUpdate(int updateBuildId)
         {
             Logger.LogInformation($"Updating {SubscriptionId} with latest build id {updateBuildId}");
             Subscription subscription = await Context.Subscriptions.FindAsync(SubscriptionId);
@@ -195,39 +197,66 @@ namespace SubscriptionActorService
                 .ThenInclude(a => a.Locations)
                 .FirstAsync(b => b.Id == buildId);
 
-            ActorId pullRequestActorId;
+            ActorId actorId;
 
             if (subscription.PolicyObject.Batchable)
             {
-                pullRequestActorId = PullRequestActorId.Create(
+                actorId = PullRequestActorId.Create(
                     subscription.TargetRepository,
                     subscription.TargetBranch);
             }
             else
             {
-                pullRequestActorId = PullRequestActorId.Create(SubscriptionId);
+                if (subscription.UseDirectMerge)
+                {
+                    actorId = MergeActorId.Create(SubscriptionId);
+                    Logger.LogInformation($"Creating merge actor for '{actorId}'");
+
+                    IMergeActor mergeActor = MergeActorFactory.Lookup(actorId);
+
+                    List<Asset> assets = build.Assets.Select(
+                            a => new Asset
+                            {
+                                Name = a.Name,
+                                Version = a.Version
+                            })
+                        .ToList();
+
+                    Logger.LogInformation($"Running asset update for {SubscriptionId}");
+
+                    await mergeActor.UpdateAssetsAsync(
+                        SubscriptionId,
+                        build.Id,
+                        build.GitHubRepository ?? build.AzureDevOpsRepository,
+                        build.Commit,
+                        assets);
+                }
+                else
+                {
+                    actorId = PullRequestActorId.Create(SubscriptionId);
+                    Logger.LogInformation($"Creating pull request actor for '{actorId}'");
+
+                    IPullRequestActor pullRequestActor = PullRequestActorFactory.Lookup(actorId);
+
+                    List<Asset> assets = build.Assets.Select(
+                            a => new Asset
+                            {
+                                Name = a.Name,
+                                Version = a.Version
+                            })
+                        .ToList();
+
+                    Logger.LogInformation($"Running asset update for {SubscriptionId}");
+
+                    await pullRequestActor.UpdateAssetsAsync(
+                        SubscriptionId,
+                        build.Id,
+                        build.GitHubRepository ?? build.AzureDevOpsRepository,
+                        build.Commit,
+                        assets);
+                }
+
             }
-
-            Logger.LogInformation($"Creating pull request actor for '{pullRequestActorId}'");
-
-            IPullRequestActor pullRequestActor = PullRequestActorFactory.Lookup(pullRequestActorId);
-
-            List<Asset> assets = build.Assets.Select(
-                    a => new Asset
-                    {
-                        Name = a.Name,
-                        Version = a.Version
-                    })
-                .ToList();
-
-            Logger.LogInformation($"Running asset update for {SubscriptionId}");
-
-            await pullRequestActor.UpdateAssetsAsync(
-                SubscriptionId, 
-                build.Id, 
-                build.GitHubRepository ?? build.AzureDevOpsRepository, 
-                build.Commit, 
-                assets);
 
             Logger.LogInformation($"Asset update complete for {SubscriptionId}");
 

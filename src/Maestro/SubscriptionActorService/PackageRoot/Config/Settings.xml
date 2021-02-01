@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <Section Name="SubscriptionActorServiceReplicatorConfig">
     <!-- Default OperationTimeout is 5 minutes which for some of the operations like publishing files into a branch
@@ -15,6 +15,13 @@
     <Parameter Name="BatchAcknowledgementInterval" Value="0.005" />
   </Section>
   <Section Name="PullRequestActorServiceReplicatorSecurityConfig">
+    <Parameter Name="CredentialType" Value="None" />
+  </Section>
+  <Section Name="MergeActorServiceReplicatorConfig">
+    <Parameter Name="ReplicatorEndpoint" Value="PullRequestActorServiceReplicatorEndpoint" />
+    <Parameter Name="BatchAcknowledgementInterval" Value="0.005" />
+  </Section>
+  <Section Name="MergeActorServiceReplicatorSecurityConfig">
     <Parameter Name="CredentialType" Value="None" />
   </Section>
   <Section Name="TransportSettings">

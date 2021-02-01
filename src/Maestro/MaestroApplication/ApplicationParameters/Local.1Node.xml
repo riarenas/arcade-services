@@ -16,6 +16,9 @@
     <Parameter Name="PullRequestActorService_PartitionCount" Value="1" />
     <Parameter Name="PullRequestActorService_TargetReplicaSetSize" Value="1" />
     <Parameter Name="PullRequestActorService_MinReplicaSetSize" Value="1" />
+    <Parameter Name="MergeActorService_PartitionCount" Value="1" />
+    <Parameter Name="MergeActorService_TargetReplicaSetSize" Value="1" />
+    <Parameter Name="MergeActorService_MinReplicaSetSize" Value="1" />
     <Parameter Name="FeedCleanerService_InstanceCount" Value="1" />
   </Parameters>
 </Application>

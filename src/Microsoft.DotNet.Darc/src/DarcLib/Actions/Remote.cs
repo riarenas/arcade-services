@@ -405,6 +405,8 @@ namespace Microsoft.DotNet.DarcLib
             _logger.LogInformation($"Merging pull request '{pullRequestUrl}' succeeded!");
         }
 
+
+
         /// <summary>
         ///     Calculate the leaves of the coherency trees
         /// </summary>
@@ -1152,6 +1154,12 @@ namespace Microsoft.DotNet.DarcLib
             await _gitClient.CommitFilesAsync(filesToCommit, repoUri, branch, message);
 
             return filesToCommit;
+        }
+
+        public async Task<string> TryFastForwardMergeBranchesAsync(string repoUri, string branchToMerge, string baseBranch)
+        {
+            CheckForValidGitClient();
+            return await _gitClient.TryFastForwardMergeBranchesAsync(repoUri, branchToMerge, baseBranch);
         }
 
         public Task<PullRequest> GetPullRequestAsync(string pullRequestUri)

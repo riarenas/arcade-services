@@ -1264,5 +1264,24 @@ namespace Microsoft.DotNet.DarcLib
             (string owner, string repo, int id) prInfo = ParsePullRequestUri(pullRequestUri);
             await DeleteBranchAsync(prInfo.owner, prInfo.repo, pr.HeadBranch);
         }
+
+        public async Task<string> TryFastForwardMergeBranchesAsync(string repoUri, string branchToMerge, string baseBranch)
+        {
+            string shaToMerge = await GetLastCommitShaAsync(repoUri, branchToMerge);
+            //Setting the force parameter to false makes the reference update fail if it's not a fast forward
+            ReferenceUpdate refUpdate = new ReferenceUpdate(shaToMerge, false);
+            (string owner, string repo) = ParseRepoUri(repoUri);
+            try
+            {
+                Reference updatedReference = await Client.Git.Reference.Update(owner, repo, baseBranch, refUpdate);
+                return updatedReference.Ref;
+            }
+            catch(ApiException ex)
+            {
+                _logger.LogError(ex, $"Failed to perform fast forward merge of SHA: {shaToMerge} into branch {baseBranch} of repo {repoUri}");
+            }
+
+            return null;
+        }
     }
 }

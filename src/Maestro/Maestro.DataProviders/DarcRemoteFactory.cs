@@ -84,5 +84,10 @@ namespace Maestro.DataProviders
                 return new Remote(gitClient, new MaestroBarClient(Context, KustoClientProvider), logger);
             }
         }
+
+        public Task<IAzureDevOpsClient> GetAzdoClientForAccount(string account, ILogger logger)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

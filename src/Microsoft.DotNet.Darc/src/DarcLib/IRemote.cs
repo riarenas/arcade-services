@@ -417,6 +417,19 @@ namespace Microsoft.DotNet.DarcLib
             bool includeDisabledSubscriptions,
             IReadOnlyList<string> includedFrequencies = default);
 
+        /// <summary>
+        /// Attempts to do a fast forward-only merge of two branches
+        /// </summary>
+        /// <param name="repoUri">repo uri</param>
+        /// <param name="branchToMerge">branch to merge</param>
+        /// <param name="baseBranch">base branch</param>
+        /// <returns>whether the merge succeeded</returns>
+        Task<string> TryFastForwardMergeBranchesAsync(
+            string repoUri,
+            string branchToMerge,
+            string baseBranch
+        );
+
 
         #endregion
 

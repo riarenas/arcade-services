@@ -97,5 +97,10 @@ namespace Microsoft.DotNet.Darc.Helpers
         {
             return Task.FromResult(GetRemote(this._options, null, logger));
         }
+
+        public Task<IAzureDevOpsClient> GetAzdoClientForAccount(string account, ILogger logger)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="MaestroApplicationType" ApplicationTypeVersion="1.0.42" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <Parameters>
     <Parameter Name="CoreHealthMonitor_InstanceCount" DefaultValue="-1" />
@@ -16,6 +16,9 @@
     <Parameter Name="PullRequestActorService_PartitionCount" DefaultValue="10" />
     <Parameter Name="PullRequestActorService_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="PullRequestActorService_TargetReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="MergeActorService_PartitionCount" DefaultValue="10" />
+    <Parameter Name="MergeActorService_MinReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="MergeActorService_TargetReplicaSetSize" DefaultValue="3" />
     <Parameter Name="FeedCleanerService_InstanceCount" DefaultValue="1" />
     <Parameter Name="WebCertName" DefaultValue="" />
     <Parameter Name="WebProtocol" DefaultValue="http" />
@@ -111,6 +114,11 @@
     <Service Name="PullRequestActorService" GeneratedIdRef="818bba8f-85b7-4be9-86c9-ec18f401f383|Persisted">
       <StatefulService ServiceTypeName="PullRequestActorServiceType" TargetReplicaSetSize="[PullRequestActorService_TargetReplicaSetSize]" MinReplicaSetSize="[PullRequestActorService_MinReplicaSetSize]">
         <UniformInt64Partition PartitionCount="[PullRequestActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+      </StatefulService>
+    </Service>
+    <Service Name="MergeActorService" GeneratedIdRef="f9e2f7c6-15cd-4641-805b-27d4addae5cf|Persisted">
+      <StatefulService ServiceTypeName="MergeActorServiceType" TargetReplicaSetSize="[MergeActorService_TargetReplicaSetSize]" MinReplicaSetSize="[MergeActorService_MinReplicaSetSize]">
+        <UniformInt64Partition PartitionCount="[MergeActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
       </StatefulService>
     </Service>
     <Service Name="FeedCleanerService" ServicePackageActivationMode="ExclusiveProcess">

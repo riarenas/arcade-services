@@ -24,6 +24,7 @@ namespace Maestro.Data.Models
         public int ChannelId { get; set; }
 
         public Channel Channel { get; set; }
+        public bool UseDirectMerge { get; set; }
 
         public string SourceRepository
         {

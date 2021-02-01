@@ -104,5 +104,30 @@ namespace SubscriptionActorService
                 return new Remote(gitClient, new MaestroBarClient(_context), logger);
             }
         }
+
+        /// <summary>
+        /// Gets an azure devops client to perform API operations with for a given account
+        /// </summary>
+        /// <param name="account">azure devops account</param>
+        /// <param name="logger">logger to use</param>
+        /// <returns>An azure devops client for the provided account</returns>
+        public async Task<IAzureDevOpsClient> GetAzdoClientForAccount(string account, ILogger logger)
+        {
+            using (_operations.BeginOperation($"Getting Azure Devops client for account {account}."))
+            {
+                string temporaryRepositoryRoot = _configuration.GetValue<string>("DarcTemporaryRepoRoot", null);
+                if (string.IsNullOrEmpty(temporaryRepositoryRoot))
+                {
+                    temporaryRepositoryRoot = _tempFiles.GetFilePath("repos");
+                }
+
+                var gitExe = await _retry.RetryAsync(
+                    async () => await _localGit.GetPathToLocalGitAsync(),
+                    ex => logger.LogError(ex, $"Failed to install git to local temporary directory."),
+                    ex => true);
+                return new AzureDevOpsClient(gitExe, await _azureDevOpsTokenProvider.GetTokenForAccount(account),
+                            logger, temporaryRepositoryRoot);
+            }
+        }
     }
 }

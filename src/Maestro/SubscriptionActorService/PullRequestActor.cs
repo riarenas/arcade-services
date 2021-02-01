@@ -28,6 +28,7 @@ namespace SubscriptionActorService
     {
         // class needed to appease service fabric build time generation of actor code
         [StatePersistence(StatePersistence.Persisted)]
+        [ActorService(Name="PullRequestActorService")]
         public class PullRequestActor : Actor, IPullRequestActor, IRemindable
         {
             public PullRequestActor(ActorService actorService, ActorId actorId) : base(actorService, actorId)
@@ -526,7 +527,7 @@ namespace SubscriptionActorService
             foreach (SubscriptionPullRequestUpdate update in subscriptionPullRequestUpdates)
             {
                 ISubscriptionActor actor = SubscriptionActorFactory.Lookup(new ActorId(update.SubscriptionId));
-                if (!await actor.UpdateForMergedPullRequestAsync(update.BuildId))
+                if (!await actor.UpdateForMergedDependencyUpdate(update.BuildId))
                 {
                     Logger.LogInformation($"Failed to update subscription {update.SubscriptionId} for merged PR.");
                     await Reminders.TryUnregisterReminderAsync(PullRequestCheck);
@@ -1326,32 +1327,6 @@ namespace SubscriptionActorService
             }
 
             return repoBranch;
-        }
-
-        [DataContract]
-        public class UpdateAssetsParameters
-        {
-            [DataMember]
-            public Guid SubscriptionId { get; set; }
-
-            [DataMember]
-            public int BuildId { get; set; }
-
-            [DataMember]
-            public string SourceSha { get; set; }
-
-            [DataMember]
-            public string SourceRepo { get; set; }
-
-            [DataMember]
-            public List<Asset> Assets { get; set; }
-
-            /// <summary>
-            ///     If true, this is a coherency update and not driven by specific
-            ///     subscription ids (e.g. could be multiple if driven by a batched subscription)
-            /// </summary>
-            [DataMember]
-            public bool IsCoherencyUpdate { get; set; }
         }
     }
 

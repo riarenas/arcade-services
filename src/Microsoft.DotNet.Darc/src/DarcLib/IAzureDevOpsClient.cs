@@ -129,5 +129,43 @@ namespace Microsoft.DotNet.DarcLib
         /// <param name="releaseDefinition">Release definition to be updated</param>
         /// <returns>Id of the started release</returns>
         Task<int> StartNewReleaseAsync(string accountName, string projectName, AzureDevOpsReleaseDefinition releaseDefinition, int barBuildId);
+
+        /// <summary>
+        /// Trigger a new build of the specified pipeline
+        /// </summary>
+        /// <param name="accountName">Azure devops Account name</param>
+        /// <param name="projectName">Project name</param>
+        /// <param name="azdoDefinitionId">Pipeline definition id</param>
+        /// <param name="sourceBranch">Branch to queue the build for</param>
+        /// <param name="sourceVersion">SHA to queue the build at</param>
+        /// <param name="queueTimeVariables">optional queue time parameters</param>
+        /// <param name="templateParameters">optional template parameters</param>
+        /// <returns></returns>
+        Task<int> StartNewBuildAsync(
+            string accountName,
+            string projectName,
+            int azdoDefinitionId,
+            string sourceBranch,
+            string sourceVersion,
+            Dictionary<string, string> queueTimeVariables = null,
+            Dictionary<string, string> templateParameters = null);
+
+        /// <summary>
+        /// Cancels an azure devops Build currently in progress
+        /// </summary>
+        /// <param name="accountName">Azure devops Account name</param>
+        /// <param name="project">azure devops project</param>
+        /// <param name="buildId">build id to cancel</param>
+        Task CancelAzureDevOpsBuildAsync(string accountName, string project, long buildId);
+
+        /// <summary>
+        /// Finds a build queued for the specified SHA in the specified build definition
+        /// </summary>
+        /// <param name="accountName">Azure devops account name</param>
+        /// <param name="project">azure devops project</param>
+        /// <param name="buildDefinition">build definition to search on</param>
+        /// <param name="shaToSearch">SHA to search for</param>
+        /// <returns>The build if found, null if not</returns>
+        Task<AzureDevOpsBuild> FindBuildForSHA(string accountName, string project, long buildDefinition, string shaToSearch);
     }
 }

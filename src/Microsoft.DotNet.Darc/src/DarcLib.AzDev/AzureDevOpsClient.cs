@@ -1297,6 +1297,47 @@ This pull request has not been merged because Maestro++ is waiting on the follow
         }
 
         /// <summary>
+        /// Cancels an azure devops Build currently in progress
+        /// </summary>
+        /// <param name="accountName">Azure devops Account name</param>
+        /// <param name="project">azure devops project</param>
+        /// <param name="buildId">build id to cancel</param>
+        public async Task CancelAzureDevOpsBuildAsync(string accountName, string project, long buildId)
+        {
+            string body = "{status: Cancelling}";
+            await this.ExecuteAzureDevOpsAPIRequestAsync(
+                HttpMethod.Patch,
+                accountName,
+                project,
+                $"_apis/build/builds/{buildId}",
+                _logger,
+                body: body,
+                versionOverride: "6.0");
+        }
+
+        /// <summary>
+        /// Gets the id of the build associated with a particular SHA
+        /// </summary>
+        /// <param name="accountName">azure devops account</param>
+        /// <param name="project">azure devops project</param>
+        /// <param name="buildDefinition">buld definition id</param>
+        /// <returns>Reference to the build found, or null if not found</returns>
+        public async Task<AzureDevOpsBuild> FindBuildForSHA(string accountName, string project, long buildDefinition, string shaToSearch)
+        {
+            JObject content = await this.ExecuteAzureDevOpsAPIRequestAsync(
+                HttpMethod.Get,
+                accountName,
+                project,
+                $"_apis/build/builds?definitions={buildDefinition}&$top=10",
+                _logger,
+                versionOverride: "6.0");
+
+            var builds = ((JArray)content["value"]).ToObject<List<AzureDevOpsBuild>>();
+
+            return builds?.Where(b => b.SourceVersion.Equals(shaToSearch, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+        }
+
+        /// <summary>
         ///   Gets all Artifact feeds along with their packages in an Azure DevOps account.
         /// </summary>
         /// <param name="accountName">Azure DevOps account name.</param>
@@ -1560,6 +1601,11 @@ This pull request has not been merged because Maestro++ is waiting on the follow
                 return str.Substring(0, MaxPullRequestDescriptionLength);
             }
             return str;
+        }
+
+        public Task<string> TryFastForwardMergeBranchesAsync(string repoUri, string branchToMerge, string baseBranch)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -527,5 +527,10 @@ namespace Microsoft.DotNet.DarcLib
         {
             throw new NotImplementedException();
         }
+
+        Task<string> IGitRepo.TryFastForwardMergeBranchesAsync(string repoUri, string branchToMerge, string baseBranch)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

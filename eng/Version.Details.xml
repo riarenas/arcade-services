@@ -3,29 +3,29 @@
   <ProductDependencies>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.21063.3">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.21565.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f73f462f75b5fa21805f0b3c477b11277c5da556</Sha>
+      <Sha>2f5d6d594674c80c57048dd9ba8b4f6ee9297171</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.SignTool" Version="5.0.0-beta.21063.3">
+    <Dependency Name="Microsoft.DotNet.SignTool" Version="5.0.0-beta.21565.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f73f462f75b5fa21805f0b3c477b11277c5da556</Sha>
+      <Sha>2f5d6d594674c80c57048dd9ba8b4f6ee9297171</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="5.0.0-beta.21063.3">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="5.0.0-beta.21565.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f73f462f75b5fa21805f0b3c477b11277c5da556</Sha>
+      <Sha>2f5d6d594674c80c57048dd9ba8b4f6ee9297171</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.SwaggerGenerator.MSBuild" Version="5.0.0-beta.21063.3">
+    <Dependency Name="Microsoft.DotNet.SwaggerGenerator.MSBuild" Version="5.0.0-beta.21565.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f73f462f75b5fa21805f0b3c477b11277c5da556</Sha>
+      <Sha>2f5d6d594674c80c57048dd9ba8b4f6ee9297171</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Git.IssueManager" Version="5.0.0-beta.21063.3">
+    <Dependency Name="Microsoft.DotNet.Git.IssueManager" Version="5.0.0-beta.21565.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f73f462f75b5fa21805f0b3c477b11277c5da556</Sha>
+      <Sha>2f5d6d594674c80c57048dd9ba8b4f6ee9297171</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.VersionTools" Version="6.0.0-beta.21460.7">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>7324320f814152b72295946847ca72413507705a</Sha>
+      <Sha>2f5d6d594674c80c57048dd9ba8b4f6ee9297171</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

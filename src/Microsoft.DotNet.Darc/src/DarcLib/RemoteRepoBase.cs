@@ -17,6 +17,8 @@ namespace Microsoft.DotNet.DarcLib
 {
     public class RemoteRepoBase
     {
+        private const string ExecuteFileMode = "100755";
+
         protected RemoteRepoBase(string gitExecutable, string temporaryRepositoryPath, IMemoryCache cache)
         {
             TemporaryRepositoryPath = temporaryRepositoryPath;
@@ -96,8 +98,8 @@ namespace Microsoft.DotNet.DarcLib
                     {
                         File.Delete(filePath);
                     }
-
-                    LocalHelpers.ExecuteCommand(GitExecutable, $"add {filePath}", logger, clonedRepo);
+                    string addCommand = $"add {filePath} {(file.Mode == ExecuteFileMode ? "--chmod=+x" : "")}";
+                    LocalHelpers.ExecuteCommand(GitExecutable, addCommand, logger, clonedRepo);
                 }
 
                 LocalHelpers.ExecuteCommand(GitExecutable, $"commit -m \"{commitMessage}\"", logger, clonedRepo);

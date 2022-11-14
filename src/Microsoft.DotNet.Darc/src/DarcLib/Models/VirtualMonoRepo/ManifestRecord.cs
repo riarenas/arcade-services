@@ -16,16 +16,27 @@ public interface ISourceComponent
     // TODO (https://github.com/dotnet/arcade/issues/10549): Add also non-GitHub implementations
     public string GetPublicUrl()
     {
-        var url = RemoteUri + "/commit/" + CommitSha;
-        url = url.Replace("//", "/");
+        var url = RemoteUri;
 
         if (url.EndsWith(".git"))
         {
             url = url[..^4];
         }
 
+        if (!url.EndsWith('/'))
+        {
+            url += '/';
+        }
+
+        url += "commit/" + CommitSha;
+
         return url;
     }
+}
+
+public interface IVersionedSourceComponent : ISourceComponent
+{
+    string PackageVersion { get; }
 }
 
 /// <summary>
@@ -56,7 +67,7 @@ public abstract class ManifestRecord : IComparable<ISourceComponent>, ISourceCom
     }
 }
 
-public class RepositoryRecord : ManifestRecord
+public class RepositoryRecord : ManifestRecord, IVersionedSourceComponent
 {
     public RepositoryRecord(string path, string remoteUri, string commitSha, string packageVersion) 
         : base(path, remoteUri, commitSha)

@@ -65,10 +65,7 @@ public abstract class VmrManagerBase : IVmrManager
         SourceMapping mapping,
         CancellationToken cancellationToken)
     {
-        var versionDetailsPath = Path.Combine(
-            _vmrInfo.GetRepoSourcesPath(mapping),
-            VersionFiles.VersionDetailsXml.Replace('/', Path.DirectorySeparatorChar));
-
+        var versionDetailsPath = _vmrInfo.GetRepoSourcesPath(mapping) / VersionFiles.VersionDetailsXml;
         var versionDetailsContent = await File.ReadAllTextAsync(versionDetailsPath, cancellationToken);
 
         var dependencies = _versionDetailsParser.ParseVersionDetailsXml(versionDetailsContent, true)
@@ -142,13 +139,19 @@ public abstract class VmrManagerBase : IVmrManager
         return template;
     }
 
-    protected static LibGit2Sharp.Commit GetCommit(Repository repository, string? sha)
+    protected static string GetShaForRef(string repoPath, string? gitRef)
     {
-        var commit = sha is null
-            ? repository.Commits.FirstOrDefault()
-            : repository.Lookup<LibGit2Sharp.Commit>(sha);
+        if (gitRef == Constants.EmptyGitObject)
+        {
+            return gitRef;
+        }
 
-        return commit ?? throw new InvalidOperationException($"Failed to find commit {sha} in {repository.Info.Path}");
+        using var repository = new Repository(repoPath);
+        var commit = gitRef is null
+            ? repository.Commits.FirstOrDefault()
+            : repository.Lookup<LibGit2Sharp.Commit>(gitRef);
+
+        return commit?.Id.Sha ?? throw new InvalidOperationException($"Failed to find commit {gitRef} in {repository.Info.Path}");
     }
 
     protected static Signature DotnetBotCommitSignature => new(Constants.DarcBotName, Constants.DarcBotEmail, DateTimeOffset.Now);

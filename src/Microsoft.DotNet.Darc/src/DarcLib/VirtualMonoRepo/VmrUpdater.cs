@@ -64,7 +64,6 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
 
     private readonly IVmrInfo _vmrInfo;
     private readonly IVmrDependencyTracker _dependencyTracker;
-    private readonly IRemoteFactory _remoteFactory;
     private readonly IRepositoryCloneManager _cloneManager;
     private readonly IVmrPatchHandler _patchHandler;
     private readonly IReadmeComponentListGenerator _readmeComponentListGenerator;
@@ -73,7 +72,6 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
 
     public VmrUpdater(
         IVmrDependencyTracker dependencyTracker,
-        IRemoteFactory remoteFactory,
         IVersionDetailsParser versionDetailsParser,
         IRepositoryCloneManager cloneManager,
         IVmrPatchHandler patchHandler,
@@ -88,7 +86,6 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
         _logger = logger;
         _vmrInfo = vmrInfo;
         _dependencyTracker = dependencyTracker;
-        _remoteFactory = remoteFactory;
         _cloneManager = cloneManager;
         _patchHandler = patchHandler;
         _readmeComponentListGenerator = readmeComponentListGenerator;
@@ -117,27 +114,14 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
     {
         var currentSha = GetCurrentVersion(mapping);
 
-        if (targetRevision is null || targetRevision == HEAD && !await HasRemoteUpdates(mapping, currentSha))
-        {
-            throw new EmptySyncException($"No new remote changes detected for {mapping.Name}");
-        }
-
         _logger.LogInformation("Synchronizing {name} from {current} to {repo} / {revision}{oneByOne}",
             mapping.Name, currentSha, mapping.DefaultRemote, targetRevision ?? HEAD, noSquash ? " one commit at a time" : string.Empty);
 
-        string clonePath = await _cloneManager.PrepareClone(mapping.DefaultRemote, targetRevision ?? mapping.DefaultRef, cancellationToken);
+        LocalPath clonePath = await _cloneManager.PrepareClone(mapping.DefaultRemote, targetRevision ?? mapping.DefaultRef, cancellationToken);
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        LibGit2Sharp.Commit currentCommit;
-        LibGit2Sharp.Commit targetCommit;
-        using (var clone = new Repository(clonePath))
-        {
-            currentCommit = GetCommit(clone, currentSha);
-            targetCommit = GetCommit(clone, targetRevision);
-        }
-
-        targetRevision = targetCommit.Id.Sha;
+        targetRevision = GetShaForRef(clonePath, targetRevision);
 
         if (currentSha == targetRevision)
         {
@@ -208,7 +192,7 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
                     mapping,
                     currentSha,
                     commitToCopy.Sha,
-                    commitToCopy.Sha == targetCommit.Sha ? targetVersion : null,
+                    commitToCopy.Sha == targetRevision ? targetVersion : null,
                     clonePath,
                     message,
                     commitToCopy.Author,
@@ -292,7 +276,7 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
         while (reposToUpdate.TryDequeue(out var repoToUpdate))
         {
             var mappingToUpdate = repoToUpdate.Mapping;
-            var currentSha = GetCurrentVersion(mappingToUpdate);
+            string currentSha = GetCurrentVersion(mappingToUpdate);
 
             if (repoToUpdate.Parent is not null)
             {
@@ -328,10 +312,24 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
                     TargetVersion: dependency.Version,
                     Parent: mappingToUpdate.Name);
 
-                var dependencySha = GetCurrentVersion(dependencyMapping);
+                string dependencySha;
+                try
+                {
+                    dependencySha = GetCurrentVersion(dependencyMapping);
+                }
+                catch (RepositoryNotInitializedException)
+                {
+                    _logger.LogWarning("{parent}'s dependency {repo} has not been initialized in the VMR yet, repository will be initialized",
+                        mappingToUpdate.Name,
+                        dependencyMapping.Name);
+
+                    dependencySha = Constants.EmptyGitObject;
+                    _dependencyTracker.UpdateDependencyVersion(dependencyMapping, new VmrDependencyVersion(dependencySha, null));
+                }
+
                 if (dependencySha == dependency.Commit)
                 {
-                    _logger.LogDebug("Dependency {name} is already at {sha}, skipping..", dependency.Name, dependencySha);
+                    _logger.LogDebug("Dependency {name} is already at {sha}, skipping..", dependency.RepoUri, dependencySha);
                     skippedDependencies.Add(dependencyUpdate);
                     continue;
                 }
@@ -375,7 +373,7 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
         string fromRevision,
         string toRevision,
         string? targetVersion,
-        string clonePath,
+        LocalPath clonePath,
         string commitMessage,
         Signature author,
         CancellationToken cancellationToken)
@@ -408,7 +406,7 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
         _dependencyTracker.UpdateDependencyVersion(mapping, new VmrDependencyVersion(toRevision, targetVersion));
         await _readmeComponentListGenerator.UpdateReadme();
         
-        Commands.Stage(new Repository(_vmrInfo.VmrPath), new[]
+        Commands.Stage(new Repository(_vmrInfo.VmrPath), new string[]
         {
             VmrInfo.ReadmeFileName,
             VmrInfo.GitInfoSourcesDir,
@@ -436,7 +434,11 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
         Commit(commitMessage, author);
     }
 
-    private async Task<IReadOnlyCollection<(SourceMapping Mapping, string Path)>> RestoreVmrPatchedFiles(SourceMapping mapping, string clonePath, IReadOnlyCollection<VmrIngestionPatch> patches, CancellationToken cancellationToken)
+    private async Task<IReadOnlyCollection<(SourceMapping Mapping, string Path)>> RestoreVmrPatchedFiles(
+        SourceMapping mapping,
+        LocalPath clonePath,
+        IReadOnlyCollection<VmrIngestionPatch> patches,
+        CancellationToken cancellationToken)
     {
         var vmrPatchesToRestore = await GetVmrPatchesToRestore(mapping, clonePath, patches, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
@@ -499,7 +501,7 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
     /// <param name="patches">Patches of currently synchronized changes</param>
     private async Task<IReadOnlyCollection<(SourceMapping Mapping, string Path)>> GetVmrPatchesToRestore(
         SourceMapping updatedMapping,
-        string clonePath,
+        LocalPath clonePath,
         IReadOnlyCollection<VmrIngestionPatch> patches,
         CancellationToken cancellationToken)
     {
@@ -511,7 +513,7 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
         patchesToRestore.AddRange(_patchHandler.GetVmrPatches(updatedMapping).Select(patch => (updatedMapping, patch)));
 
         // If we are not updating the mapping that the VMR patches come from, we're done
-        if (_vmrInfo.PatchesPath == null || !_vmrInfo.PatchesPath.StartsWith(_vmrInfo.GetRelativeRepoSourcesPath(updatedMapping)))
+        if (_vmrInfo.PatchesPath == null || !_vmrInfo.PatchesPath.StartsWith(VmrInfo.GetRelativeRepoSourcesPath(updatedMapping)))
         {
             return patchesToRestore;
         }
@@ -523,15 +525,14 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
         {
             var patchedFiles = await _patchHandler.GetPatchedFiles(clonePath, patch.Path, cancellationToken);
             var affectedPatches = patchedFiles
-                .Select(path => _vmrInfo.GetRelativeRepoSourcesPath(updatedMapping) + "/" + path)
-                .Where(path => path.StartsWith(_vmrInfo.PatchesPath) && path.EndsWith(".patch"))
-                .Select(path => path.Replace('/', _fileSystem.DirectorySeparatorChar))
-                .Select(path => _fileSystem.PathCombine(_vmrInfo.VmrPath, path));
+                .Select(path => VmrInfo.GetRelativeRepoSourcesPath(updatedMapping) / path)
+                .Where(path => path.Path.StartsWith(_vmrInfo.PatchesPath) && path.Path.EndsWith(".patch"))
+                .Select(path => _vmrInfo.VmrPath / path);
 
             foreach (var affectedPatch in affectedPatches)
             {
                 // patch is in the folder named as the mapping for which it is applied
-                var affectedMappping = affectedPatch.Split(_fileSystem.DirectorySeparatorChar)[^2];
+                var affectedMappping = affectedPatch.Path.Split(_fileSystem.DirectorySeparatorChar)[^2];
                 
                 _logger.LogInformation("Detected a change of a VMR patch {patch} for {repo}", affectedPatch, affectedMappping);
                 patchesToRestore.Add((_dependencyTracker.Mappings.First(m => m.Name == affectedMappping), affectedPatch));
@@ -543,23 +544,13 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
             .ToArray();
     }
 
-    /// <summary>
-    /// Checks remotely if there are any newer commits (whether it even makes sense to clone).
-    /// </summary>
-    private async Task<bool> HasRemoteUpdates(SourceMapping mapping, string currentSha)
-    {
-        var remoteRepo = await _remoteFactory.GetRemoteAsync(mapping.DefaultRemote, _logger);
-        var lastCommit = await remoteRepo.GetLatestCommitAsync(mapping.DefaultRemote, mapping.DefaultRef);
-        return !lastCommit.Equals(currentSha, StringComparison.InvariantCultureIgnoreCase);
-    }
-
     private string GetCurrentVersion(SourceMapping mapping)
     {
         var version = _dependencyTracker.GetDependencyVersion(mapping);
 
         if (version is null)
         {
-            throw new InvalidOperationException($"Repository {mapping.Name} has not been initialized yet");
+            throw new RepositoryNotInitializedException($"Repository {mapping.Name} has not been initialized yet");
         }
 
         return version.Sha;
@@ -570,4 +561,12 @@ public class VmrUpdater : VmrManagerBase, IVmrUpdater
         string? TargetRevision,
         string? TargetVersion,
         string? Parent);
+
+    private class RepositoryNotInitializedException : Exception
+    {
+        public RepositoryNotInitializedException(string message)
+            : base(message)
+        {
+        }
+    }
 }

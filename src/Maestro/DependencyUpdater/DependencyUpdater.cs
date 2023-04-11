@@ -217,11 +217,11 @@ public sealed class DependencyUpdater : IServiceImplementation, IDependencyUpdat
         {
             var enabledSubscriptionsWithTargetFrequency = (await Context.Subscriptions
                     .Where(s => s.Enabled)
+                    .Where(s => s.PolicyObject.UpdateFrequency == targetUpdateFrequency)
                     .Include(s => s.Channel)
                     .ThenInclude(c => c.BuildChannels)
                     .ThenInclude(bc => bc.Build)
-                    .ToListAsync())
-                .Where(s => s.PolicyObject.UpdateFrequency == targetUpdateFrequency);
+                    .ToListAsync());
 
             int subscriptionsUpdated = 0;
             foreach (var subscription in enabledSubscriptionsWithTargetFrequency)
